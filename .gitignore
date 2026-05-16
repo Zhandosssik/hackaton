@@ -18,6 +18,12 @@
 # production
 /build
 
+# local database
+/data/*.db
+/data/*.db-*
+/data/users.json
+/data/users.json.tmp
+
 # misc
 .DS_Store
 *.pem

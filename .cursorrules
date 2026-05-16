@@ -1,4 +1,4 @@
-# PromptQuest — Project Context
+# Prompto — Project Context
 
 ## Что это
 Веб-игра для обучения написанию AI-промптов. Механика как у Duolingo:
@@ -10,12 +10,13 @@ AI анализирует и даёт оценку + советы.
 - TypeScript
 - Tailwind CSS
 - Framer Motion (анимации)
-- Groq API (llama-3.3-70b-versatile) — анализ промптов
+- Mistral API (mistral-small-latest) — анализ промптов
 - localStorage — хранение прогресса (без базы данных)
 
 ## Структура страниц
-/ → главная (лендинг, кнопка Start)
-/lesson → экран урока (задание + textarea + Submit)
+/ → главная (лендинг, Практика + Обучение)
+/learning → теория промптинга (10 уроков + тест на каждый)
+/lesson → практика (задание + textarea + Submit)
 /result → результат урока (score, feedback, XP)
 /profile → профиль (уровень, стрик, история)
 
@@ -28,7 +29,7 @@ AI анализирует и даёт оценку + советы.
 
 ## Как работает AI оценка
 POST /api/analyze принимает { userPrompt, taskDescription }
-Groq возвращает { score: 0-100, feedback: string, tips: string[] }
+Mistral возвращает { score, isCorrect, feedback, hint, correctPrompt }
 score определяет сколько XP получает игрок
 
 ## Дизайн
