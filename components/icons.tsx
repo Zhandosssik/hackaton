@@ -25,6 +25,7 @@ import {
   Star,
   Sun,
   Target,
+  Trophy,
   User,
   Video,
   X,
@@ -68,6 +69,7 @@ const navIcons: Record<NavIconId, LucideIcon> = {
   book: BookOpen,
   target: Target,
   calendar: CalendarDays,
+  trophy: Trophy,
   user: User,
 };
 

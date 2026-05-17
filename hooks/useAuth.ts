@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { clearActiveUserId, setActiveUserId } from "@/lib/active-user";
+import { copyGuestEducationToUser } from "@/lib/education-storage";
+import { copyGuestProgressToUser } from "@/lib/game-progress";
 import type { UserPublic } from "@/types/auth";
 
 interface UseAuthResult {
@@ -20,11 +23,16 @@ export function useAuth(): UseAuthResult {
       if (response.ok) {
         const data = (await response.json()) as { user: UserPublic };
         setUser(data.user);
+        setActiveUserId(data.user.id);
+        copyGuestProgressToUser(data.user.id);
+        copyGuestEducationToUser(data.user.id);
       } else {
         setUser(null);
+        clearActiveUserId();
       }
     } catch {
       setUser(null);
+      clearActiveUserId();
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { IconLogo, NavIcon } from "@/components/icons";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { clearActiveUserId } from "@/lib/active-user";
 import { useAuth } from "@/hooks/useAuth";
 import type { NavIconId } from "@/types/icons";
 
@@ -18,6 +19,7 @@ const MAIN_LINKS: {
   { href: "/learning", label: "Обучение", short: "Теория", icon: "book" },
   { href: "/lesson", label: "Тренировка", short: "Практика", icon: "target" },
   { href: "/daily", label: "Ежедневные", short: "День", icon: "calendar" },
+  { href: "/leaderboard", label: "Рейтинг", short: "Топ", icon: "trophy" },
   { href: "/profile", label: "Профиль", short: "Профиль", icon: "user" },
 ];
 
@@ -36,6 +38,7 @@ export function AppNav() {
     setLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      clearActiveUserId();
       await refresh();
       router.refresh();
       if (pathname === "/profile") {

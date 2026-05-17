@@ -7,6 +7,8 @@ import { IconCheck, IconLock, PracticeSectionIcon } from "@/components/icons";
 import { LESSON_SECTIONS, findLesson } from "@/data/lessons";
 import { getCompletedEducationLessons } from "@/lib/education-storage";
 import { getGameProgress, recordPracticeResult } from "@/lib/game-progress";
+import { syncUserProgressToServer } from "@/lib/progress-sync";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getDefaultUnlockedTrainingLessonId,
   getTrainingLessonLockReason,
@@ -27,6 +29,7 @@ const fadeIn = {
 };
 
 export default function LessonPage() {
+  const { user } = useAuth();
   const [completedEducation, setCompletedEducation] = useState<string[]>([]);
   const [completedPractice, setCompletedPractice] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -41,8 +44,9 @@ export default function LessonPage() {
   const [showCorrectPrompt, setShowCorrectPrompt] = useState(false);
 
   useEffect(() => {
-    const edu = getCompletedEducationLessons();
-    const practice = getGameProgress().completedPractice;
+    const ownerKey = user?.id;
+    const edu = getCompletedEducationLessons(ownerKey);
+    const practice = getGameProgress(ownerKey).completedPractice;
     setCompletedEducation(edu);
     setCompletedPractice(practice);
 
@@ -56,7 +60,7 @@ export default function LessonPage() {
       }
     }
     setHydrated(true);
-  }, []);
+  }, [user?.id]);
 
   const trainingUnlocked = isTrainingUnlocked(completedEducation);
 
@@ -69,8 +73,8 @@ export default function LessonPage() {
   }, []);
 
   const refreshPracticeProgress = useCallback(() => {
-    setCompletedPractice(getGameProgress().completedPractice);
-  }, []);
+    setCompletedPractice(getGameProgress(user?.id).completedPractice);
+  }, [user?.id]);
 
   const handleSelectLesson = useCallback(
     (sectionId: SectionId, lessonId: string) => {
@@ -131,6 +135,7 @@ export default function LessonPage() {
       const result = data as AnalyzeResult;
       setAnalyzeResult(result);
       recordPracticeResult(activeLesson, result.score, result.isCorrect);
+      if (user) void syncUserProgressToServer(user.id);
       refreshPracticeProgress();
     } catch {
       setAnalyzeError("Ошибка сети. Попробуйте ещё раз.");

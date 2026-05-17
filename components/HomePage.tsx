@@ -243,22 +243,22 @@ function GuestBanner() {
   return (
     <FadeIn>
       <section className="relative z-10 px-6 pb-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-5 sm:flex-row sm:items-center">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50 px-6 py-5 dark:border-amber-500/30 dark:bg-amber-500/10 sm:flex-row sm:items-center">
           <motion.div
             animate={{ scale: [1, 1.02, 1] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            <p className="font-semibold text-amber-200">
+            <p className="font-semibold text-amber-950 dark:text-amber-100">
               Гостевой доступ: 1 урок теории
             </p>
-            <p className="mt-1 text-sm text-amber-200/80">
+            <p className="mt-1 text-sm text-amber-900/85 dark:text-amber-100/80">
               Зарегистрируйтесь для полного курса. Тренировка — после 3 уроков обучения.
             </p>
           </motion.div>
           <div className="flex shrink-0 gap-3">
             <Link
               href="/login"
-              className="rounded-xl border border-amber-400/40 px-5 py-2.5 text-sm font-semibold text-amber-100 transition hover:bg-amber-500/20"
+              className="rounded-xl border border-amber-600/50 bg-white px-5 py-2.5 text-sm font-semibold text-amber-950 transition hover:bg-amber-100 dark:border-amber-400/40 dark:bg-transparent dark:text-amber-100 dark:hover:bg-amber-500/20"
             >
               Войти
             </Link>

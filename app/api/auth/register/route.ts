@@ -4,12 +4,11 @@ import {
   createUser,
   hashPassword,
   isEmailTaken,
-  isValidEmail,
-  normalizeEmail,
   setAuthCookie,
   toPublicUser,
 } from "@/lib/auth";
 import { authConfigErrorResponse, isAuthConfigError } from "@/lib/auth-errors";
+import { validateRegisterBody } from "@/lib/register-validation";
 import type { AuthResponse, RegisterRequestBody } from "@/types/auth";
 
 export const runtime = "nodejs";
@@ -23,34 +22,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Неверный JSON" }, { status: 400 });
   }
 
-  const email = normalizeEmail(body.email ?? "");
-  const password = body.password ?? "";
-  const displayName = (body.displayName ?? "").trim();
+  const validation = validateRegisterBody(body);
 
-  if (!email || !password || !displayName) {
-    return NextResponse.json(
-      { error: "Email, пароль и имя обязательны" },
-      { status: 400 },
-    );
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
-  if (!isValidEmail(email)) {
-    return NextResponse.json({ error: "Некорректный email" }, { status: 400 });
-  }
-
-  if (password.length < 6) {
-    return NextResponse.json(
-      { error: "Пароль должен быть не короче 6 символов" },
-      { status: 400 },
-    );
-  }
-
-  if (displayName.length < 2) {
-    return NextResponse.json(
-      { error: "Имя должно быть не короче 2 символов" },
-      { status: 400 },
-    );
-  }
+  const { email, password, firstName, lastName, age } = validation.data;
 
   if (isEmailTaken(email)) {
     return NextResponse.json(
@@ -61,7 +39,13 @@ export async function POST(request: Request) {
 
   try {
     const passwordHash = await hashPassword(password);
-    const user = createUser({ email, passwordHash, displayName });
+    const user = createUser({
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      age,
+    });
     const token = await createSessionToken(user.id);
 
     const response = NextResponse.json<AuthResponse>({

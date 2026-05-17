@@ -9,6 +9,9 @@ export interface StoredUser {
   email: string;
   password_hash: string;
   display_name: string;
+  first_name?: string;
+  last_name?: string;
+  age?: number;
   created_at: string;
 }
 
@@ -75,6 +78,9 @@ export function insertStoredUser(user: StoredUser): StoredUser {
     ...user,
     email: normalized,
     display_name: user.display_name.trim(),
+    first_name: user.first_name?.trim(),
+    last_name: user.last_name?.trim(),
+    age: user.age,
   };
 
   db.users.push(record);

@@ -9,17 +9,31 @@ import {
   isStoredEmailTaken,
   type StoredUser,
 } from "@/lib/db";
+import { isValidEmail, normalizeEmail } from "@/lib/email";
 import type { User, UserPublic } from "@/types/auth";
+
+export { isValidEmail, normalizeEmail };
 
 export const SESSION_COOKIE = "pq_session";
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
 const BCRYPT_ROUNDS = 10;
 
 function storedToUser(row: StoredUser): User {
+  const firstName = row.first_name?.trim() ?? "";
+  const lastName = row.last_name?.trim() ?? "";
+  const displayName =
+    row.display_name.trim() ||
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    "Игрок";
+
   return {
     id: row.id,
     email: row.email,
-    displayName: row.display_name,
+    displayName,
+    firstName: firstName || (displayName.split(/\s+/)[0] ?? ""),
+    lastName:
+      lastName || displayName.split(/\s+/).slice(1).join(" ") || "",
+    age: typeof row.age === "number" ? row.age : null,
     createdAt: row.created_at,
   };
 }
@@ -29,6 +43,9 @@ export function toPublicUser(user: User): UserPublic {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    age: user.age,
   };
 }
 
@@ -110,16 +127,22 @@ export function findUserById(id: string): User | null {
 export function createUser(input: {
   email: string;
   passwordHash: string;
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  age: number;
 }): User {
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
+  const displayName = `${input.firstName} ${input.lastName}`.trim();
 
   const row = insertStoredUser({
     id,
     email: input.email,
     password_hash: input.passwordHash,
-    display_name: input.displayName,
+    display_name: displayName,
+    first_name: input.firstName,
+    last_name: input.lastName,
+    age: input.age,
     created_at: createdAt,
   });
 
@@ -141,10 +164,3 @@ export async function getSessionUser(): Promise<UserPublic | null> {
   return user ? toPublicUser(user) : null;
 }
 
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-export function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}

@@ -18,6 +18,7 @@ import {
   TOTAL_EDUCATION,
   TOTAL_PRACTICE,
 } from "@/lib/game-progress";
+import { hydrateAndSyncUserProgress } from "@/lib/progress-sync";
 import { getProfileExtras, saveProfileExtras } from "@/lib/profile-storage";
 import type { Achievement, GameProgress } from "@/types/game";
 import type { ProfileExtras } from "@/types/profile";
@@ -43,12 +44,15 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    const game = getGameProgress();
-    const edu = getCompletedEducationLessons();
-    setProgress(game);
-    setEducationDone(edu);
-    setExtras(getProfileExtras(user.id));
-    setAchievements(getAchievements(game, edu));
+    void (async () => {
+      await hydrateAndSyncUserProgress(user.id);
+      const game = getGameProgress(user.id);
+      const edu = getCompletedEducationLessons(user.id);
+      setProgress(game);
+      setEducationDone(edu);
+      setExtras(getProfileExtras(user.id));
+      setAchievements(getAchievements(game, edu));
+    })();
   }, [user]);
 
   function handleSaveExtras() {
@@ -88,7 +92,11 @@ export function ProfilePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold sm:text-3xl">{user.displayName}</h1>
-                <p className="mt-1 text-zinc-500 dark:text-zinc-400">{user.email}</p>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  {user.firstName} {user.lastName}
+                  {user.age !== null ? ` · ${user.age} лет` : ""}
+                </p>
+                <p className="mt-0.5 text-zinc-500 dark:text-zinc-400">{user.email}</p>
               </div>
             </div>
           </div>
@@ -96,7 +104,15 @@ export function ProfilePage() {
           <div className="grid gap-6 p-8 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Уровень" value={String(level)} hint="каждые 300 XP" />
             <StatCard label="XP" value={String(progress.totalXp)} hint="всего очков" />
-            <StatCard label="Рейтинг" value={String(rating)} hint="из 1000" />
+            <StatCard
+              label="Баллы"
+              value={String(rating)}
+              hint={
+                <Link href="/leaderboard" className="hover:underline">
+                  из 1000 · не место в топе →
+                </Link>
+              }
+            />
             <StatCard
               label="Стрик"
               value={
@@ -275,7 +291,7 @@ function StatCard({
 }: {
   label: string;
   value: React.ReactNode;
-  hint: string;
+  hint: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl bg-zinc-50 p-4 text-center dark:bg-zinc-800/50">

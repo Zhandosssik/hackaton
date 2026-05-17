@@ -1,9 +1,11 @@
 import { EDUCATION_LESSONS } from "@/data/education";
 import { LESSON_SECTIONS } from "@/data/lessons";
+import { getProgressOwnerKey } from "@/lib/active-user";
 import { getCompletedEducationLessons } from "@/lib/education-storage";
+import { calculateRating } from "@/lib/rating";
 import type { Achievement, GameProgress, PracticeHistoryEntry } from "@/types/game";
 
-const PROGRESS_KEY = "promptquest-game-progress";
+const LEGACY_PROGRESS_KEY = "promptquest-game-progress";
 const XP_PER_LEVEL = 300;
 const MAX_HEARTS = 3;
 const TOTAL_PRACTICE = LESSON_SECTIONS.reduce(
@@ -12,6 +14,10 @@ const TOTAL_PRACTICE = LESSON_SECTIONS.reduce(
 );
 
 export const TOTAL_EDUCATION = EDUCATION_LESSONS.length;
+
+function gameProgressKey(ownerKey?: string): string {
+  return `promptquest-game-progress-${ownerKey ?? getProgressOwnerKey()}`;
+}
 
 function defaultProgress(): GameProgress {
   return {
@@ -24,31 +30,24 @@ function defaultProgress(): GameProgress {
   };
 }
 
-export function getGameProgress(): GameProgress {
-  if (typeof window === "undefined") return defaultProgress();
-  try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    if (!raw) return defaultProgress();
-    const parsed = JSON.parse(raw) as Partial<GameProgress>;
-    return {
-      totalXp: typeof parsed.totalXp === "number" ? parsed.totalXp : 0,
-      hearts:
-        typeof parsed.hearts === "number"
-          ? Math.min(MAX_HEARTS, Math.max(0, parsed.hearts))
-          : MAX_HEARTS,
-      streak: typeof parsed.streak === "number" ? parsed.streak : 0,
-      lastActiveDate:
-        typeof parsed.lastActiveDate === "string" ? parsed.lastActiveDate : null,
-      completedPractice: Array.isArray(parsed.completedPractice)
-        ? parsed.completedPractice.filter((id): id is string => typeof id === "string")
-        : [],
-      practiceHistory: Array.isArray(parsed.practiceHistory)
-        ? parsed.practiceHistory.filter(isHistoryEntry)
-        : [],
-    };
-  } catch {
-    return defaultProgress();
-  }
+function parseProgress(raw: string): GameProgress {
+  const parsed = JSON.parse(raw) as Partial<GameProgress>;
+  return {
+    totalXp: typeof parsed.totalXp === "number" ? parsed.totalXp : 0,
+    hearts:
+      typeof parsed.hearts === "number"
+        ? Math.min(MAX_HEARTS, Math.max(0, parsed.hearts))
+        : MAX_HEARTS,
+    streak: typeof parsed.streak === "number" ? parsed.streak : 0,
+    lastActiveDate:
+      typeof parsed.lastActiveDate === "string" ? parsed.lastActiveDate : null,
+    completedPractice: Array.isArray(parsed.completedPractice)
+      ? parsed.completedPractice.filter((id): id is string => typeof id === "string")
+      : [],
+    practiceHistory: Array.isArray(parsed.practiceHistory)
+      ? parsed.practiceHistory.filter(isHistoryEntry)
+      : [],
+  };
 }
 
 function isHistoryEntry(value: unknown): value is PracticeHistoryEntry {
@@ -62,8 +61,49 @@ function isHistoryEntry(value: unknown): value is PracticeHistoryEntry {
   );
 }
 
-function saveProgress(progress: GameProgress): void {
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+function saveProgress(progress: GameProgress, ownerKey?: string): void {
+  localStorage.setItem(gameProgressKey(ownerKey), JSON.stringify(progress));
+}
+
+/** Перенос старого общего ключа в guest (один раз) */
+export function migrateLegacyGameProgress(): void {
+  if (typeof window === "undefined") return;
+  const legacy = localStorage.getItem(LEGACY_PROGRESS_KEY);
+  const guestKey = gameProgressKey("guest");
+  if (legacy && !localStorage.getItem(guestKey)) {
+    localStorage.setItem(guestKey, legacy);
+  }
+  if (legacy) localStorage.removeItem(LEGACY_PROGRESS_KEY);
+}
+
+/** Если у пользователя ещё нет сохранения — копируем гостевой прогресс */
+export function copyGuestProgressToUser(userId: string): void {
+  if (typeof window === "undefined") return;
+  migrateLegacyGameProgress();
+  const userKey = gameProgressKey(userId);
+  if (localStorage.getItem(userKey)) return;
+  const guestRaw = localStorage.getItem(gameProgressKey("guest"));
+  if (guestRaw) localStorage.setItem(userKey, guestRaw);
+}
+
+export function getGameProgress(ownerKey?: string): GameProgress {
+  if (typeof window === "undefined") return defaultProgress();
+  migrateLegacyGameProgress();
+  try {
+    const raw = localStorage.getItem(gameProgressKey(ownerKey));
+    if (!raw) return defaultProgress();
+    return parseProgress(raw);
+  } catch {
+    return defaultProgress();
+  }
+}
+
+export function setGameProgress(
+  progress: GameProgress,
+  ownerKey?: string,
+): void {
+  if (typeof window === "undefined") return;
+  saveProgress(progress, ownerKey);
 }
 
 function todayKey(): string {
@@ -128,7 +168,6 @@ export function recordPracticeResult(
   return progress;
 }
 
-/** XP за ежедневное задание (не влияет на список тренировки) */
 export function recordDailyTaskResult(
   taskId: string,
   score: number,
@@ -179,11 +218,16 @@ export function getLevelProgress(totalXp: number): {
   };
 }
 
-export function getRating(totalXp: number, educationDone: number): number {
-  const practiceScore = getGameProgress().completedPractice.length * 40;
-  const theoryScore = educationDone * 25;
-  const xpScore = Math.min(500, totalXp);
-  return Math.min(1000, practiceScore + theoryScore + Math.floor(xpScore / 2));
+export function getRating(
+  totalXp: number,
+  educationDoneCount: number,
+  practiceDoneCount?: number,
+  ownerKey?: string,
+): number {
+  const practiceCount =
+    practiceDoneCount ??
+    getGameProgress(ownerKey).completedPractice.length;
+  return calculateRating(totalXp, practiceCount, educationDoneCount);
 }
 
 export function getAchievements(

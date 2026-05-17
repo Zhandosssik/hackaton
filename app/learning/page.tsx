@@ -23,19 +23,20 @@ import {
   getCompletedEducationLessons,
   markEducationLessonComplete,
 } from "@/lib/education-storage";
+import { syncUserProgressToServer } from "@/lib/progress-sync";
 
 const INITIAL_LESSON_ID = "edu-1";
 
 export default function LearningPage() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [activeLessonId, setActiveLessonId] = useState(INITIAL_LESSON_ID);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [gateOpen, setGateOpen] = useState(false);
   const [lockHint, setLockHint] = useState<string | null>(null);
 
   useEffect(() => {
-    setCompletedLessons(getCompletedEducationLessons());
-  }, []);
+    setCompletedLessons(getCompletedEducationLessons(user?.id));
+  }, [user?.id]);
 
   const lesson = useMemo(
     () => findEducationLesson(activeLessonId),
@@ -44,8 +45,9 @@ export default function LearningPage() {
 
   const handleLessonPassed = useCallback(() => {
     markEducationLessonComplete(activeLessonId);
-    setCompletedLessons(getCompletedEducationLessons());
-  }, [activeLessonId]);
+    setCompletedLessons(getCompletedEducationLessons(user?.id));
+    if (user) void syncUserProgressToServer(user.id);
+  }, [activeLessonId, user]);
 
   const handleSelectLesson = useCallback(
     (lessonId: string) => {

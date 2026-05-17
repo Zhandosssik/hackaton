@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "user_id": "c901132f-c549-4306-b50b-3181fdaa589f",
+      "total_xp": 280,
+      "streak": 2,
+      "practice_completed": [
+        "text-1",
+        "text-2",
+        "text-3"
+      ],
+      "education_completed": [
+        "edu-1",
+        "edu-2",
+        "edu-3"
+      ],
+      "rating": 335,
+      "updated_at": "2026-05-17T16:58:31.149Z"
+    },
+    {
+      "user_id": "17b567eb-7fa6-4012-b83e-bec9f90af5cb",
+      "total_xp": 180,
+      "streak": 1,
+      "practice_completed": [],
+      "education_completed": [],
+      "rating": 90,
+      "updated_at": "2026-05-16T11:30:47.623Z"
+    }
+  ]
+}

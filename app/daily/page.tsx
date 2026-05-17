@@ -13,6 +13,7 @@ import {
   isDailyTaskCompleted,
   recordDailyCompletion,
 } from "@/lib/daily-storage";
+import { syncUserProgressToServer } from "@/lib/progress-sync";
 import { getProfileExtras } from "@/lib/profile-storage";
 import type { AnalyzeResult } from "@/types/analyze";
 import type { DailyTask, DailyTasksPayload } from "@/types/daily";
@@ -163,6 +164,7 @@ export default function DailyPage() {
         result.score,
         result.isCorrect,
       );
+      void syncUserProgressToServer(user.id);
       refreshCompletion(user.id, dateKey);
     } catch {
       setAnalyzeError("Ошибка сети. Попробуйте ещё раз.");
